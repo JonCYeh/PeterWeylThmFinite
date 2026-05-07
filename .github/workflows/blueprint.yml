@@ -23,6 +23,10 @@ jobs:
   build_project:
     runs-on: ubuntu-latest
     name: Build project
+    # Required by `actions/deploy-pages` below.
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Cleanup to free disk space
         uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.0
@@ -47,8 +51,26 @@ jobs:
           lint: true
           mk_all-check: true
 
-      - name: Compile blueprint and documentation
+      # We pass deploy: false so we can run `scripts/fix_blueprint_links.py`
+      # against the Jekyll-bundled output before publishing it.
+      - name: Compile blueprint and documentation (no deploy)
         uses: leanprover-community/docgen-action@deed0cdc44dd8e5de07a300773eb751d33e32fc8 # 2025-10-26
         with:
           blueprint: true
           homepage: home_page
+          deploy: false
+
+      # Rewrites <a href="…/find/#doc/X"> in every HTML file under
+      # _site/blueprint to point at mathlib4_docs (for Mathlib decls) or
+      # the GitHub source file (for local decls).
+      - name: Patch blueprint links
+        run: python3 scripts/fix_blueprint_links.py --web-dir _site/blueprint
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: ./_site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

@@ -11,6 +11,7 @@ import Mathlib.LinearAlgebra.Dimension.Constructions
 import Mathlib.LinearAlgebra.Dimension.Finrank
 import Mathlib.RingTheory.MatrixAlgebra
 import Mathlib.Algebra.Algebra.Pi
+import PeterWeyl.Auxiliary
 
 /-!
 # The Peter–Weyl Theorem for finite groups

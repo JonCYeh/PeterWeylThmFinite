@@ -209,6 +209,7 @@ to them.
 \begin{corollary}[Every $V : \texttt{FDRep k G}$ is semisimple]
   \label{cor:fdrep-semisimple}
   \lean{FDRep.isSemisimpleModule_asModule}
+  \leanok
   % [~ML] Trivial transport of Theorem~\ref{thm:maschke} along
   %       FDRep.V ≃ ρ.asModule.
   \uses{thm:maschke, def:fdrep}
@@ -722,6 +723,7 @@ isotypic decomposition.
 \begin{corollary}[Irreducibility test]
   \label{cor:irred-test}
   \lean{FDRep.irreducible_iff_inner_self_eq_one}
+  \leanok
   % [~ML]
   \uses{thm:multiplicity-formula, thm:char-ortho}
   $V : \texttt{FDRep k G}$ is simple iff
@@ -739,6 +741,7 @@ isotypic decomposition.
 \begin{corollary}[Characters separate isomorphism classes]
   \label{cor:char-separates}
   \lean{FDRep.iso_iff_character_eq}
+  \leanok
   % [~ML]
   \uses{thm:multiplicity-formula, lem:char-iso}
   $V \cong W$ in $\texttt{FDRep k G}$ iff $\chi_V = \chi_W$.
@@ -758,6 +761,7 @@ isotypic decomposition.
 \begin{definition}[Class functions]
   \label{def:cl-G}
   \lean{ClassFunction}
+  \leanok
   % [~ML] Easy local definition (the subspace of conjugation-invariant
   %       functions).
   \uses{def:standing-hypotheses}
@@ -768,6 +772,7 @@ isotypic decomposition.
 \begin{lemma}[$\dim \mathrm{Cl}(G) = $ \#conjugacy classes]
   \label{lem:dim-cl}
   \lean{ClassFunction.finrank_eq_conjClasses}
+  \leanok
   % [~ML]
   \uses{def:cl-G}
   $\dim_k \mathrm{Cl}(G) = |\mathrm{ConjClasses}\ G|$.
