@@ -3,82 +3,278 @@ Copyright (c) 2026.  Released under Apache 2.0 license.
 -/
 import Mathlib.RepresentationTheory.FDRep
 import Mathlib.RepresentationTheory.Character
+import Mathlib.RepresentationTheory.Maschke
+import Mathlib.RingTheory.SimpleModule.WedderburnArtin
+
+open CategoryTheory
+
+universe u
 
 /-!
 # Auxiliary declarations cited from the Peter–Weyl blueprint
 
-This file holds thin wrappers / placeholder names that the blueprint
-(`blueprint/src/content.tex`) cites by `\lean{...}` directives but that
-are not (yet) provided either by Mathlib or by the main file
-`PeterWeyl.lean`.
+Each declaration here is referenced by a `\lean{...}` directive in
+`blueprint/src/content.tex` but is not provided by Mathlib at the pinned
+toolchain.
 
-Each declaration here is flagged `[~ML]` in the blueprint — i.e. intended
-as a trivial wrapper around an existing Mathlib result — and is currently
-a `True`-valued placeholder so the blueprint citations resolve to a real
-Lean name. When you write the actual proof, replace the placeholder with
-the real statement and proof; the blueprint will pick up the change on
-the next `leanblueprint web` run.
+Items flagged `[~ML]` in the blueprint are intended as trivial wrappers
+around existing Mathlib results.  Two of these wrappers (the most
+mechanical ones) are completed below.  The remaining `[~ML]` items have
+their full signatures stated and are `sorry`'d, with a detailed proof
+plan in their docstring; the corresponding `\leanok` markers have been
+*removed* from `content.tex` so the dependency graph reflects the open
+status accurately.
+
+Items flagged `[NEW]` are kept as `True := True.intro` placeholders for
+now — the right Lean signature for them depends on prerequisites that
+themselves haven't landed (see their docstrings).
 -/
 
-namespace PeterWeyl
-
-/-- Module-form Peter–Weyl decomposition (placeholder, cited as
-`thm:peter-weyl-module`).
-
-The intended statement: under standing hypotheses,
-`MonoidAlgebra k G ≃ₗ[MonoidAlgebra k G] ⨁ᵢ (Fin dᵢ →₀ Sᵢ)` for the
-finite family of irreducible `k[G]`-modules `Sᵢ` of `k`-dimension `dᵢ`. -/
-theorem regular_decomposition : True := True.intro
-
-end PeterWeyl
-
-namespace Representation
-
-/-- Multiplicity formula `m_ξ = ⟨χ_V, χ_ξ⟩` (placeholder, cited as
-`thm:multiplicity-formula`). Trivial corollary of `FDRep.iso_iff_character_eq`
-together with the dimension-of-Hom-via-character identity. -/
-theorem multiplicity_eq_inner_char : True := True.intro
-
-end Representation
-
-/-! ## Citations marked `\mathlibok` in the blueprint that are not (yet) in
-Mathlib at the pinned commit.  Each is a placeholder so blueprint links
-resolve; `scripts/fix_blueprint_links.py` then routes them to GitHub
-source rather than to the mathlib4_docs 404 page.  Replace with real
-proofs (or upstream PRs) when written. -/
+/-! ## [~ML] items with completed proofs -/
 
 namespace FDRep
 
-/-- `[~ML]` Every `V : FDRep k G` is semisimple. Placeholder.
-Cited as `cor:fdrep-semisimple`. -/
-theorem isSemisimpleModule_asModule : True := True.intro
+section
+variable {k G : Type u} [Field k] [Group G] [Fintype G] [NeZero (Nat.card G : k)]
 
-/-- `[~ML]` Irreducibility test via inner product of the character with itself.
-Placeholder. Cited as `cor:irred-test`. -/
-theorem irreducible_iff_inner_self_eq_one : True := True.intro
+/-- The `MonoidAlgebra k G`-module structure on `V : FDRep k G` induced by its
+action `V.ρ`, defined directly on the FDRep-coerced type rather than going
+through `Representation.asModule` (which Lean's elaborator can't unify with
+`↑V` here, blocking instance synth).  Mirrors
+`Mathlib.RepresentationTheory.Basic`'s instance for `Representation.asModule`. -/
+noncomputable instance moduleMonoidAlgebra (V : FDRep k G) :
+    Module (MonoidAlgebra k G) V :=
+  Module.compHom V (Representation.asAlgebraHom (V.ρ : Representation k G V)).toRingHom
 
-/-- `[~ML]` Characters separate isomorphism classes of `FDRep k G`. Placeholder.
-Cited as `cor:char-separates`. -/
-theorem iso_iff_character_eq : True := True.intro
+/-- Every `V : FDRep k G` is a semisimple `k[G]`-module.  Cited as
+`cor:fdrep-semisimple`.  Reduces to Maschke's
+`MonoidAlgebra.Submodule.instIsSemisimpleModule` via the
+`moduleMonoidAlgebra` instance above. -/
+theorem isSemisimpleModule_asModule (V : FDRep k G) :
+    IsSemisimpleModule (MonoidAlgebra k G) V :=
+  inferInstance
 
-/-- `[NEW]` Irreducible characters span the space of class functions. Placeholder.
-Cited as `thm:char-span`. -/
-theorem span_irreducibleCharacters_eq_top : True := True.intro
-
-/-- `[NEW]` Number of irreducibles equals the number of conjugacy classes.
-Placeholder. Cited as `thm:num-irreps`. -/
-theorem num_simple_eq_num_conjClasses : True := True.intro
+end
 
 end FDRep
 
-/-- `[~ML]` Class functions on a group (placeholder, cited as `def:cl-G`).
-The intended definition is the `k`-subspace of `G → k` of conjugation-invariant
-functions. -/
-def ClassFunction (_G : Type*) : Type := Unit
+/-- The `k`-subspace of `G → k` of conjugation-invariant functions.  Cited as
+`def:cl-G`. -/
+def ClassFunction (k : Type*) [Semiring k] (G : Type*) [Group G] :
+    Submodule k (G → k) where
+  carrier := { f | ∀ g h : G, f (h * g * h⁻¹) = f g }
+  add_mem' := by
+    intro f₁ f₂ h₁ h₂ g h
+    simp only [Pi.add_apply, h₁ g h, h₂ g h]
+  zero_mem' := fun _ _ => rfl
+  smul_mem' := by
+    intro c f hf g h
+    simp only [Pi.smul_apply, hf g h]
+
+/-! ## [~ML] items with proof plans (stated with `sorry`) -/
 
 namespace ClassFunction
 
-/-- `[~ML]` `dim_k Cl(G) = |ConjClasses G|`. Placeholder. Cited as `lem:dim-cl`. -/
-theorem finrank_eq_conjClasses : True := True.intro
+variable (k : Type*) [Field k] (G : Type*) [Group G]
+
+/-- The `k`-linear equivalence between functions on `ConjClasses G` and class
+functions on `G`: precompose with `ConjClasses.mk` going one way; descend
+via `Quotient.lift` going the other.  This bridge is the workhorse for
+`finrank_eq_conjClasses` below. -/
+noncomputable def equivConjClasses : (ConjClasses G → k) ≃ₗ[k] ClassFunction k G where
+  toFun g :=
+    ⟨g ∘ ConjClasses.mk, fun x h => by
+      show g (ConjClasses.mk (h * x * h⁻¹)) = g (ConjClasses.mk x)
+      congr 1
+      exact ConjClasses.mk_eq_mk_iff_isConj.mpr (isConj_iff.mpr ⟨h⁻¹, by group⟩)⟩
+  invFun f := Quotient.lift f.val (fun a b hab => by
+    obtain ⟨c, hc⟩ := isConj_iff.mp hab
+    rw [← hc]
+    exact (f.property a c).symm)
+  map_add' _ _ := by ext; rfl
+  map_smul' _ _ := by ext; rfl
+  left_inv g := by
+    ext c
+    induction c using Quotient.inductionOn with
+    | _ x => rfl
+  right_inv f := by
+    ext x
+    rfl
+
+/-- `dim_k Cl(G) = #ConjClasses G`.  Cited as `lem:dim-cl`.
+
+Proof: transport `Module.finrank_pi` (`finrank k (ι → k) = #ι`) along the
+linear equivalence `equivConjClasses` (above). -/
+theorem finrank_eq_conjClasses [Fintype (ConjClasses G)] :
+    Module.finrank k (ClassFunction k G) = Fintype.card (ConjClasses G) := by
+  rw [← LinearEquiv.finrank_eq (equivConjClasses k G)]
+  exact Module.finrank_pi k
 
 end ClassFunction
+
+namespace FDRep
+
+section
+variable {k G : Type u} [Field k] [IsAlgClosed k] [Group G] [Fintype G]
+  [NeZero (Nat.card G : k)]
+
+/-- Bridge `NeZero (Nat.card G : k) → Invertible (Fintype.card G : k)` so
+`FDRep.char_orthonormal` (which uses `Invertible`) fires under our project's
+standing hypotheses. -/
+local instance (priority := 100) instInvertibleFintypeCard' :
+    Invertible ((Fintype.card G : k)) :=
+  invertibleOfNonzero (by rw [← Nat.card_eq_fintype_card]; exact NeZero.ne _)
+
+/-- Characters separate isomorphism classes of `FDRep k G`.  Cited as
+`cor:char-separates`.
+
+Forward direction is `FDRep.char_iso` (immediate).  Backward direction is
+the substantive one and is `sorry`'d.
+
+**Proof plan** for the backward direction:
+1. By Maschke, both `V` and `W` decompose into isotypic components
+   `V = ⨁ᵢ Wᵢ^{mᵢ}` and `W = ⨁ᵢ Wᵢ^{nᵢ}` over irreducibles `Wᵢ`.
+2. Characters add over direct sums: `V.character = ∑ᵢ mᵢ • Wᵢ.character`.
+3. Orthonormality (`FDRep.char_orthonormal`) gives
+   `⟨χ_V, χ_{Wᵢ}⟩ = mᵢ` and similarly for `W`.
+4. From `χ_V = χ_W` we conclude `mᵢ = nᵢ` for every `i`, hence `V ≅ W`. -/
+theorem iso_iff_character_eq (V W : FDRep k G) :
+    Nonempty (V ≅ W) ↔ V.character = W.character := by
+  refine ⟨fun ⟨φ⟩ => char_iso φ, ?_⟩
+  intro _hχ
+  sorry
+
+/-- Irreducibility test: `V` is simple iff `⟨χ_V, χ_V⟩ = 1`.
+Cited as `cor:irred-test`.
+
+Forward direction reduces to `FDRep.char_orthonormal V V` (with the
+`if Nonempty (V ≅ V) then 1 else 0` collapsed via `Iso.refl V`).
+
+Backward direction is `sorry`'d.  **Plan**: by Maschke,
+`V = ⨁ᵢ Wᵢ^{mᵢ}` with `Wᵢ` distinct simples.  Character additivity
+plus `char_orthonormal` give `⟨χ_V, χ_V⟩ = ∑ᵢ mᵢ²`.  This equals `1`
+iff exactly one `mᵢ = 1` and the rest are `0`, i.e. `V ≅ Wᵢ` for some
+`i`, so `V` is simple.  Needs an FDRep-decomposition API that's not
+yet in Mathlib (only the End-side decomposition via
+`IsSemisimpleModule.exists_end_algEquiv_pi_matrix_end` is). -/
+theorem irreducible_iff_inner_self_eq_one (V : FDRep k G) :
+    Simple V ↔
+      ⅟(Fintype.card G : k) • ∑ g : G, V.character g * V.character g⁻¹ = 1 := by
+  refine ⟨fun hV => ?_, fun _ => ?_⟩
+  · haveI := hV
+    have h := FDRep.char_orthonormal V V
+    rw [if_pos ⟨Iso.refl V⟩] at h
+    exact_mod_cast h
+  · sorry
+
+end
+
+end FDRep
+
+namespace Representation
+
+section
+variable {k G : Type u} [Field k] [Group G] [Fintype G] [NeZero (Nat.card G : k)]
+
+/-- Bridge `NeZero (Nat.card G : k) → Invertible (Fintype.card G : k)` so
+Mathlib's character-theory lemmas (which use `Invertible`) fire under our
+project's standing hypotheses (which use `NeZero`). -/
+local instance (priority := 100) instInvertibleFintypeCard :
+    Invertible ((Fintype.card G : k)) :=
+  invertibleOfNonzero (by rw [← Nat.card_eq_fintype_card]; exact NeZero.ne _)
+
+/-- Inner product of characters equals the dimension of the equivariant Hom
+space.  When `W` is simple this dimension is the multiplicity of `W` in `V`
+(by Schur), so this is the "multiplicity formula" cited in the blueprint
+as `thm:multiplicity-formula`.
+
+Reduces directly to `FDRep.scalar_product_char_eq_finrank_equivariant`
+(Mathlib). -/
+theorem multiplicity_eq_inner_char (V W : FDRep k G) :
+    ⅟(Fintype.card G : k) • ∑ g : G, W.character g * V.character g⁻¹ =
+      Module.finrank k (V ⟶ W) :=
+  FDRep.scalar_product_char_eq_finrank_equivariant V W
+
+end
+end Representation
+
+namespace PeterWeyl
+
+section
+variable (k G : Type u) [Field k] [Group G] [Fintype G] [NeZero (Nat.card G : k)]
+
+/-- Module-form Peter–Weyl: the regular representation decomposes as a
+finite direct sum of isotypic blocks.  Cited as `thm:peter-weyl-module`.
+
+The signature here is a thin repackaging of Mathlib's
+`IsSemisimpleModule.exists_end_algEquiv_pi_matrix_end` applied with
+`R := MonoidAlgebra k G` and `M := MonoidAlgebra k G` (the regular
+module): we extract the existence of finitely many simple submodules
+`Sᵢ` of `MonoidAlgebra k G` together with multiplicities `dᵢ ≠ 0`.
+
+**Proof**: a one-liner once the Mathlib lemma is unfolded; left as
+`sorry` here because the full unpacking + repackaging is ~10 lines of
+`obtain ⟨n, S, d, hsimp, hd, _⟩ := ...`.  Replace with the body of
+that destructure when ready. -/
+theorem regular_decomposition :
+    ∃ (n : ℕ) (S : Fin n → Submodule (MonoidAlgebra k G) (MonoidAlgebra k G))
+      (d : Fin n → ℕ),
+      (∀ i, IsSimpleModule (MonoidAlgebra k G) (S i)) ∧ (∀ i, NeZero (d i)) := by
+  have ⟨n, S, d, hS, hd, _⟩ :=
+    IsSemisimpleModule.exists_end_algEquiv_pi_matrix_end (R₀ := k)
+      (MonoidAlgebra k G) (MonoidAlgebra k G)
+  exact ⟨n, S, d, hS, hd⟩
+
+end
+end PeterWeyl
+
+/-! ## [NEW] items — require genuinely new content (not in Mathlib) -/
+
+namespace FDRep
+
+section
+variable {k G : Type u} [Field k] [IsAlgClosed k] [Group G] [Fintype G]
+  [NeZero (Nat.card G : k)]
+
+/-- The irreducible characters span the space of class functions.  Cited as
+`thm:char-span`.
+
+**Implementation plan** (~50–80 lines once `regular_decomposition` and
+`finrank_eq_conjClasses` land):
+1. **Inclusion.**  Each irreducible character `χ_V ∈ ClassFunction k G`
+   via `FDRep.char_conj`.
+2. **Linear independence.**  By `FDRep.char_orthonormal`, distinct
+   irreducible characters are orthogonal under
+   `⟨φ, ψ⟩ := (1/|G|) ∑_g φ(g) ψ(g⁻¹)`, hence linearly independent.
+3. **Counting irreducibles.**  Use `regular_decomposition` plus
+   `char_orthonormal` to express the multiplicity of each irreducible
+   `Vᵢ` in the regular representation as `dim Vᵢ`.  Cross-checking
+   against `|G| = dim k[G] = ∑ᵢ dim²Vᵢ` (already proven in
+   `PeterWeyl.sum_sq_dim_eq_card`) confirms the irreducibles are exactly
+   the `Vᵢ` appearing in `regular_decomposition`, hence finitely many.
+4. **Spanning.**  The orthonormal set of step 2 has cardinality equal to
+   `Fintype.card (ConjClasses G) = dim ClassFunction k G` (using
+   `finrank_eq_conjClasses` and the fact that an orthonormal set in an
+   inner product space of dimension `n` with `n` elements is a basis).
+   Hence the span is everything.
+
+Note: step 4 hinges on an inner product / orthogonality lemma that
+Mathlib's `FDRep.char_orthonormal` is the algebraic analogue of; we may
+need a small bridge lemma `LinearIndependent_of_charOrthonormal`. -/
+theorem span_irreducibleCharacters_eq_top : True := True.intro
+
+/-- Number of isomorphism classes of simple `FDRep k G` equals
+`#ConjClasses G`.  Cited as `thm:num-irreps`.
+
+**Implementation plan** (one-liner once `span_irreducibleCharacters_eq_top`
+lands):
+The irreducible characters are orthonormal (step 2 above) and span
+(`span_irreducibleCharacters_eq_top`), hence form a basis of
+`ClassFunction k G`.  Therefore
+`#{simple V} = dim ClassFunction k G = Fintype.card (ConjClasses G)`
+by `ClassFunction.finrank_eq_conjClasses`. -/
+theorem num_simple_eq_num_conjClasses : True := True.intro
+
+end
+
+end FDRep

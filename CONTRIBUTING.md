@@ -3,7 +3,7 @@
 Contributions are welcome. This is a small focused repo (the Peter–Weyl
 theorem for finite groups), so most contributions will be one of:
 
-- **Bug fixes** in [`PeterWeyl.lean`](PeterWeyl.lean) or the blueprint.
+- **Bug fixes** in the [`PeterWeyl/`](PeterWeyl/) library or the blueprint.
 - **Cleanups** that simplify proofs or align them with newer Mathlib API.
 - **Mathlib backports** — if a lemma in this repo is general enough to
   belong upstream, opening a Mathlib PR is preferred over duplicating it

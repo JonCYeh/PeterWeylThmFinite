@@ -13,10 +13,14 @@ groups** and its sum-of-squares dimension identity.
 > **Corollary.** `|G| = ∑ᵢ dᵢ²`, where the sum is over the irreducible
 > `k`-representations of `G` and `dᵢ` is their dimension.
 
-The Lean source is the single file [`PeterWeyl.lean`](PeterWeyl.lean); the
-two main results are
-[`groupAlgebra_algEquiv_pi_matrix`](PeterWeyl.lean#L156) and
-[`sum_sq_dim_eq_card`](PeterWeyl.lean#L193).
+The Lean source lives in [`PeterWeyl/`](PeterWeyl/), with an umbrella
+file [`PeterWeyl.lean`](PeterWeyl.lean) at the project root that imports
+both submodules.  The proof itself is in
+[`PeterWeyl/Basic.lean`](PeterWeyl/Basic.lean); the two main results are
+[`groupAlgebra_algEquiv_pi_matrix`](PeterWeyl/Basic.lean#L157) and
+[`sum_sq_dim_eq_card`](PeterWeyl/Basic.lean#L194).
+Auxiliary stubs cited from the blueprint live in
+[`PeterWeyl/Auxiliary.lean`](PeterWeyl/Auxiliary.lean).
 
 ## Proof outline
 
@@ -68,7 +72,11 @@ If `leanblueprint serve` prints `Serving http://0.0.0.0:8000/`, just type
 
 ## Repository layout
 
-- [`PeterWeyl.lean`](PeterWeyl.lean) — the entire Lean development, one file.
+- [`PeterWeyl.lean`](PeterWeyl.lean) — umbrella, imports the two submodules.
+- [`PeterWeyl/`](PeterWeyl/) — the Lean development:
+  [`Basic.lean`](PeterWeyl/Basic.lean) holds the proof of the theorem;
+  [`Auxiliary.lean`](PeterWeyl/Auxiliary.lean) holds blueprint citation
+  stubs (some completed, some `sorry`'d with proof plans).
 - [`blueprint/`](blueprint/) — LaTeX blueprint and dependency graph
   (sources in [`blueprint/src/`](blueprint/src/), rendered HTML in
   [`blueprint/web/`](blueprint/web/)).

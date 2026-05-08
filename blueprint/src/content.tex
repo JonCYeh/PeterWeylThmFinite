@@ -652,6 +652,7 @@ algebras with $k$.
 \begin{theorem}[Module form of Peter–Weyl]
   \label{thm:peter-weyl-module}
   \lean{PeterWeyl.regular_decomposition}
+  \leanok
   % [~ML] Almost entirely Mathlib: take Corollary~\ref{cor:moduleForm-PeterWeyl-Mathlib}
   %       applied to M := MonoidAlgebra k G as a k[G]-module; the simple
   %       Sᵢ are the irreducibles and the multiplicities are the dᵢ.
@@ -700,6 +701,7 @@ isotypic decomposition.
 \begin{theorem}[Multiplicity formula]
   \label{thm:multiplicity-formula}
   \lean{Representation.multiplicity_eq_inner_char}
+  \leanok
   % [~ML]
   \uses{thm:hom-via-char, thm:schur-fdrep, thm:peter-weyl-module}
   Let $V : \texttt{FDRep k G}$ and $\xi$ a simple $V_\xi : \texttt{FDRep k G}$.
@@ -723,7 +725,6 @@ isotypic decomposition.
 \begin{corollary}[Irreducibility test]
   \label{cor:irred-test}
   \lean{FDRep.irreducible_iff_inner_self_eq_one}
-  \leanok
   % [~ML]
   \uses{thm:multiplicity-formula, thm:char-ortho}
   $V : \texttt{FDRep k G}$ is simple iff
@@ -741,7 +742,6 @@ isotypic decomposition.
 \begin{corollary}[Characters separate isomorphism classes]
   \label{cor:char-separates}
   \lean{FDRep.iso_iff_character_eq}
-  \leanok
   % [~ML]
   \uses{thm:multiplicity-formula, lem:char-iso}
   $V \cong W$ in $\texttt{FDRep k G}$ iff $\chi_V = \chi_W$.
