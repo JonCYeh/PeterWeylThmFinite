@@ -491,6 +491,110 @@ direct sum of copies of one simple module.
   in \texttt{Mathlib.RingTheory.SimpleModule.WedderburnArtin}.
 \end{proof}
 
+\section{Bridge: FDRep hom-spaces as $k[G]$-module endomorphisms}
+
+The Mathlib isotypic API of the previous section is stated for
+$R$-modules, while characters and Schur live on the categorical
+$\texttt{FDRep}$ side.  The lemmas of this section identify the two
+End algebras as $k$-linear equivalents.  They are scaffold-shaped for
+upstream contribution to Mathlib (see Chapter~\ref{chap:status}); see
+\texttt{PeterWeyl/Upstream/FDRepEnd.lean} and
+\texttt{PeterWeyl/Upstream/FinrankEnd.lean}.
+
+\begin{lemma}[Action of $\mathrm{single}\,g\,t$ on $V$]
+  \label{lem:single-smul}
+  \lean{FDRep.single_smul}
+  \leanok
+  \uses{def:fdrep, def:as-module}
+  For $V : \texttt{FDRep k G}$, $g \in G$, $t \in k$, $v \in V$, with the
+  $\texttt{Module (MonoidAlgebra k G) V}$ instance induced from $V.\rho$
+  via $\texttt{Module.compHom}$,
+  \[
+     (\mathrm{single}\,g\,t)\cdot v \;=\; t\cdot V.\rho(g)\,v.
+  \]
+\end{lemma}
+
+\begin{proof}\leanok
+  Unfold $\texttt{Module.compHom}$ through
+  $\texttt{Representation.asAlgebraHom\_single}$.
+\end{proof}
+
+\begin{lemma}[{Scalar tower $k \to k[G] \to V$}]
+  \label{lem:scalar-tower-fdrep}
+  \lean{FDRep.isScalarTower_moduleMonoidAlgebra}
+  \leanok
+  \uses{lem:single-smul}
+  For $V : \texttt{FDRep k G}$, the $k$- and $\mathrm{MonoidAlgebra}\,k\,G$-actions
+  on $V$ are compatible: $\texttt{IsScalarTower k (MonoidAlgebra k G) V}$.
+\end{lemma}
+
+\begin{proof}\leanok
+  \uses{lem:single-smul}
+  Direct port of Mathlib's analogous instance for $\rho.\texttt{asModule}$
+  (\texttt{Mathlib/RepresentationTheory/Basic.lean}), via
+  $\texttt{MonoidAlgebra.induction\_on}$.
+\end{proof}
+
+\begin{theorem}[{FDRep-hom $\equiv$ $k[G]$-linear endomorphisms}]
+  \label{thm:end-linear-equiv}
+  \lean{FDRep.endLinearEquiv}
+  \leanok
+  \uses{def:fdrep, def:intertwiner, lem:scalar-tower-fdrep}
+  For $V : \texttt{FDRep k G}$,
+  \[
+     (V \to V) \;\simeq_{k}\; \mathrm{Hom}_{k[G]}(V, V),
+  \]
+  a $k$-linear equivalence between the FDRep categorical endomorphisms
+  and the $k[G]$-linear endomorphisms with respect to the
+  $\texttt{moduleMonoidAlgebra}$ instance.
+\end{theorem}
+
+\begin{proof}\leanok
+  \uses{def:intertwiner}
+  Chain of $k$-linear equivalences:
+  $(V \to V)_{\texttt{FDRep}} \simeq_k (V \to V)_{\texttt{Rep}}
+   \simeq_k V.\rho.\mathrm{IntertwiningMap}\,V.\rho
+   \simeq_k V.\rho.\texttt{asModule} \to_{k[G]} V.\rho.\texttt{asModule}
+   \simeq_k V \to_{k[G]} V$, using
+  $\texttt{FDRep.forget\_2HomLinearEquiv}$,
+  $\texttt{Rep.Hom.hom}$/$\texttt{Rep.ofHom}$,
+  $\texttt{Representation.IntertwiningMap.equivLinearMapAsModule}$, and a
+  trivial transport between Mathlib's $\texttt{asModule}$ instance and
+  our $\texttt{moduleMonoidAlgebra}$ instance — both defined as
+  $\texttt{Module.compHom V (asAlgebraHom V.}\rho\texttt{).toRingHom}$.
+\end{proof}
+
+\begin{corollary}[$\mathrm{finrank}$ of $V \to V$ in two forms]
+  \label{cor:finrank-end-eq}
+  \lean{FDRep.finrank_end_eq_finrank_moduleEnd}
+  \leanok
+  \uses{thm:end-linear-equiv}
+  $\mathrm{finrank}_k\,(V \to V) = \mathrm{finrank}_k\,\mathrm{Hom}_{k[G]}(V, V)$.
+\end{corollary}
+
+\begin{proof}\leanok
+  \uses{thm:end-linear-equiv}
+  $\mathrm{finrank}$ along the linear equivalence
+  (Theorem~\ref{thm:end-linear-equiv}).
+\end{proof}
+
+\begin{lemma}[Dimension of an End algebra in Wedderburn-Artin form]
+  \label{lem:finrank-end-pi-matrix}
+  \lean{Module.finrank_End_pi_matrix}
+  \leanok
+  Given $E \simeq_k \prod_i \mathrm{Mat}_{d_i \times d_i}(E_i)$ as
+  $k$-linear equivalence with each $E_i$ a finite-dimensional $k$-module,
+  \[
+     \mathrm{finrank}_k\,E \;=\; \sum_i d_i^{\,2}\cdot \mathrm{finrank}_k\,E_i.
+  \]
+\end{lemma}
+
+\begin{proof}\leanok
+  Compose $\texttt{LinearEquiv.finrank\_eq}$,
+  $\texttt{Module.finrank\_pi\_fintype}$, and
+  $\texttt{Module.finrank\_matrix}$.
+\end{proof}
+
 
 \chapter{The Peter–Weyl Theorem for Finite Groups}
 \label{chap:peter-weyl}
@@ -866,6 +970,36 @@ The following declarations are direct citations:
 (Corollary~\ref{cor:irred-test}),
 \texttt{FDRep.iso\_iff\_character\_eq} (Corollary~\ref{cor:char-separates}),
 \texttt{ClassFunction} and \texttt{ClassFunction.finrank\_eq\_conjClasses}.
+
+\paragraph{Upstream-target helpers (\texttt{PeterWeyl/Upstream/}).}
+The contribution to Mathlib is split across four files in
+\texttt{PeterWeyl/Upstream/}, each shaped as a free-standing PR.  Current status:
+\begin{enumerate}
+  \item \texttt{Upstream/FinrankEnd.lean} — \emph{sorry-free.}
+    \texttt{Module.finrank\_End\_pi\_matrix}
+    (Lemma~\ref{lem:finrank-end-pi-matrix}): pure dimension formula
+    $\mathrm{finrank}_k\,E = \sum_i d_i^2\cdot\mathrm{finrank}_k\,E_i$ from a
+    $k$-linear product-of-matrix-algebras equivalence.
+  \item \texttt{Upstream/FDRepEnd.lean} — \emph{sorry-free.}
+    \texttt{FDRep.moduleMonoidAlgebra},
+    \texttt{FDRep.single\_smul} (Lemma~\ref{lem:single-smul}),
+    \texttt{FDRep.isScalarTower\_moduleMonoidAlgebra}
+    (Lemma~\ref{lem:scalar-tower-fdrep}),
+    \texttt{FDRep.endLinearEquiv}
+    (Theorem~\ref{thm:end-linear-equiv}),
+    \texttt{FDRep.finrank\_end\_eq\_finrank\_moduleEnd}
+    (Corollary~\ref{cor:finrank-end-eq}).
+  \item \texttt{Upstream/Decomposition.lean} — \emph{scaffold.}
+    \texttt{FDRep.SimpleDecomp} structure plus
+    \texttt{FDRep.simpleDecomp},
+    \texttt{SimpleDecomp.character\_eq},
+    \texttt{SimpleDecomp.mult\_eq\_inner\_char} (3 sorries).
+  \item \texttt{Upstream/Characters.lean} — \emph{scaffold.}
+    \texttt{FDRep.iso\_iff\_character\_eq} and
+    \texttt{FDRep.irreducible\_iff\_inner\_self\_eq\_one} (forward
+    directions proven; backward directions sorried, awaiting the
+    \texttt{SimpleDecomp} API in \texttt{Decomposition.lean}).
+\end{enumerate}
 
 \paragraph{Genuinely new contributions (\texttt{[NEW]}).}
 There are five:
