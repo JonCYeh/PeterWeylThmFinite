@@ -134,6 +134,30 @@ structure SimpleDecomp (V : FDRep k G) where
 
 attribute [instance] SimpleDecomp.fintypeι SimpleDecomp.decEqι SimpleDecomp.simpleS
 
+/-- An FDRep isomorphism gives a `k[G]`-linear equivalence on underlying types.
+The `k`-linear part is `FDRep.isoToLinearEquiv`; `k[G]`-linearity follows from
+the intertwining property `Iso.conj_ρ`.
+
+This bridge is what's needed to reindex DFinsupp decompositions in
+`simpleDecomp` (per-class transport of `S_raw i ≃ₗ[k[G]] S_raw q.out`). -/
+noncomputable def isoToLinearEquivMonoidAlgebra {V W : FDRep k G} (i : V ≅ W) :
+    V ≃ₗ[MonoidAlgebra k G] W :=
+  { (isoToLinearEquiv i).toAddEquiv with
+    map_smul' := by
+      intro c v
+      show isoToLinearEquiv i (c • v) = c • isoToLinearEquiv i v
+      induction c using MonoidAlgebra.induction_on with
+      | hM g =>
+        simp only [MonoidAlgebra.of_apply, single_smul, one_smul]
+        -- Goal: isoToLinearEquiv i (V.ρ g v) = W.ρ g (isoToLinearEquiv i v)
+        rw [Iso.conj_ρ i g, LinearEquiv.conj_apply_apply,
+          LinearEquiv.symm_apply_apply]
+      | hadd c₁ c₂ h₁ h₂ =>
+        simp only [add_smul, map_add, h₁, h₂]
+      | hsmul s c h =>
+        show isoToLinearEquiv i ((s • c) • v) = (s • c) • isoToLinearEquiv i v
+        rw [smul_assoc, map_smul, h, smul_assoc] }
+
 /-- Convert a `MonoidAlgebra k G`-submodule of `V` to an FDRep object,
 with the action induced by restricting `V.ρ`.  The submodule is stable
 under each `V.ρ g` because it is closed under `MonoidAlgebra.single g 1 •`,
@@ -165,11 +189,33 @@ private noncomputable def isoClassSetoid (V : FDRep k G) {n : ℕ}
 /-- Existence of the canonical isotypic decomposition for any
 `V : FDRep k G` under the standing hypotheses.
 
-Implementation status: the bookkeeping fields (`ι, S, mult, mult_pos,
-pairwise_non_iso`) are provided.  The decomposition iso (`iso` field)
-requires reindexing Mathlib's `Π₀ (i : Fin n), S_raw i` through the
-quotient `ι` plus FDRep-iso-to-`k[G]`-LinearEquiv conversion for each
-summand; this last step is left as `sorry`. -/
+Implementation status (current commit):
+
+* **Provided:** `ι` (= ULift of `Quotient (FDRep iso-class setoid on Fin n)`),
+  `Fintype ι`, `DecidableEq ι`, `S` (the chosen FDRep representative
+  via `Quotient.out`), `mult` (cardinality of the iso-class fiber),
+  `mult_pos`, `pairwise_non_iso`.
+
+* **Deferred sorries:**
+
+  - `simpleS` — every chosen representative is FDRep-`Simple`.  Needs
+    the bridge `IsSimpleModule (MonoidAlgebra k G) W → Simple V`
+    where `V := fdrepOfStableSubmodule V W`, going via Mathlib's
+    `irreducible_iff_isSimpleModule_asModule` and a yet-to-be-built
+    `IsIrreducible V.ρ → CategoryTheory.Simple V` bridge for FDRep.
+    Estimated ~30–40 lines once the categorical-mono ↔ submodule
+    correspondence is unwound.
+
+  - `iso` — the decomposition `V ≃ₗ[k[G]] Π₀ (q : ι), Fin (mult q) → S q`.
+    Build by composing:
+    1. Mathlib's raw `V ≃ₗ[k[G]] Π₀ (i : Fin n), S_raw i`.
+    2. A DFinsupp regroup along the quotient projection
+       `Fin n → Quotient σ`.
+    3. Per-class transport: bijection `fiber q ≃ Fin (mult q)`
+       composed with FDRep-iso-to-`k[G]`-LinearEquiv (extending
+       `FDRep.isoToLinearEquiv` from `k`-linear to `k[G]`-linear via
+       `Iso.conj_ρ`).
+    Estimated ~80–100 lines. -/
 noncomputable def simpleDecomp (V : FDRep k G) : SimpleDecomp V :=
   haveI : Module.Finite (MonoidAlgebra k G) V :=
     Module.Finite.of_restrictScalars_finite k (MonoidAlgebra k G) V
@@ -177,9 +223,7 @@ noncomputable def simpleDecomp (V : FDRep k G) : SimpleDecomp V :=
   let raw := IsSemisimpleModule.exists_linearEquiv_fin_dfinsupp (MonoidAlgebra k G) V
   let n : ℕ := raw.choose
   let S_raw : Fin n → Submodule (MonoidAlgebra k G) V := raw.choose_spec.choose
-  -- Each `S_raw i` is a simple `k[G]`-submodule; wrap as an FDRep object.
   let S_fdrep : Fin n → FDRep k G := fun i => fdrepOfStableSubmodule V (S_raw i)
-  -- Group `Fin n` by FDRep iso class.
   let σ : Setoid (Fin n) := isoClassSetoid V S_raw
   letI : DecidableRel σ.r := Classical.decRel _
   letI : DecidableEq (Quotient σ) := Classical.decEq _
@@ -188,8 +232,6 @@ noncomputable def simpleDecomp (V : FDRep k G) : SimpleDecomp V :=
     decEqι := inferInstance
     S := fun q => S_fdrep q.down.out
     simpleS := by
-      -- Bridge `IsSimpleModule k[G] (S_raw i) → Simple (S_fdrep i)` missing
-      -- in Mathlib; left as sorry for now.
       intro _; exact sorry
     mult := fun q => Fintype.card {i : Fin n // Quotient.mk σ i = q.down}
     mult_pos := by
