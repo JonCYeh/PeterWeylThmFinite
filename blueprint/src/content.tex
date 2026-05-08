@@ -217,7 +217,7 @@ to them.
   \texttt{MonoidAlgebra k G}-module and is finite as a $k[G]$-module.
 \end{corollary}
 
-\begin{proof}
+\begin{proof}\leanok
   \uses{thm:maschke}
   Direct from Theorem~\ref{thm:maschke}; finiteness over $k[G]$ follows from
   finiteness over $k$ (which is built into \texttt{FDRep}) since $k$ is a
@@ -668,7 +668,7 @@ algebras with $k$.
   multiplicity equal to its $k$-dimension, and these are all the irreducibles.
 \end{theorem}
 
-\begin{proof}
+\begin{proof}\leanok
   \uses{cor:moduleForm-PeterWeyl-Mathlib, lem:divalg-of-isAlgClosed}
   Apply Corollary~\ref{cor:moduleForm-PeterWeyl-Mathlib} to
   $R := \mathrm{MonoidAlgebra}\ k\ G$, $R_0 := k$, and
@@ -713,7 +713,7 @@ isotypic decomposition.
   \]
 \end{theorem}
 
-\begin{proof}
+\begin{proof}\leanok
   \uses{thm:hom-via-char, thm:schur-fdrep, thm:peter-weyl-module}
   Decompose $V \cong \bigoplus_\eta V_\eta^{\oplus m_\eta}$ via
   Theorem~\ref{thm:isotypic-decomp}. Then
@@ -725,6 +725,7 @@ isotypic decomposition.
 \begin{corollary}[Irreducibility test]
   \label{cor:irred-test}
   \lean{FDRep.irreducible_iff_inner_self_eq_one}
+  \leanok
   % [~ML]
   \uses{thm:multiplicity-formula, thm:char-ortho}
   $V : \texttt{FDRep k G}$ is simple iff
@@ -742,6 +743,7 @@ isotypic decomposition.
 \begin{corollary}[Characters separate isomorphism classes]
   \label{cor:char-separates}
   \lean{FDRep.iso_iff_character_eq}
+  \leanok
   % [~ML]
   \uses{thm:multiplicity-formula, lem:char-iso}
   $V \cong W$ in $\texttt{FDRep k G}$ iff $\chi_V = \chi_W$.
@@ -778,7 +780,7 @@ isotypic decomposition.
   $\dim_k \mathrm{Cl}(G) = |\mathrm{ConjClasses}\ G|$.
 \end{lemma}
 
-\begin{proof}
+\begin{proof}\leanok
   \uses{def:cl-G}
   The indicator functions of conjugacy classes form a basis of
   $\mathrm{Cl}(G)$.
