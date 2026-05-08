@@ -108,7 +108,7 @@ local instance (priority := 100) instInvertibleFintypeCard'' :
 
 /-- An *isotypic-decomposition certificate* for a finite-dimensional
 representation: a finite indexing of distinct simple iso-classes
-appearing in `V`, with multiplicities and a decomposition iso. -/
+appearing in `V`, with multiplicities and a `k[G]`-linear decomposition iso. -/
 structure SimpleDecomp (V : FDRep k G) where
   /-- Finite indexing of distinct simple iso-classes appearing in `V`. -/
   ι : Type u
@@ -126,20 +126,52 @@ structure SimpleDecomp (V : FDRep k G) where
   mult_pos : ∀ i, 0 < mult i
   /-- Distinct indices give non-isomorphic representatives. -/
   pairwise_non_iso : ∀ ⦃i j : ι⦄, i ≠ j → IsEmpty (S i ≅ S j)
-  /-- The decomposition isomorphism, in the FDRep biproduct.
-
-  TODO: spell out the right shape for the biproduct.  The intended
-  statement is `V ≅ ⨁ i, biproduct (fun (_ : Fin (mult i)) => S i)`.
-  Needs the `CategoryTheory.Limits.biproduct` API for FDRep, which
-  exists because FDRep is a `k`-linear abelian category. -/
-  iso : True  -- placeholder, will become `V ≅ ...`
+  /-- The decomposition iso as a `k[G]`-linear equivalence (DFinsupp form,
+  closer to Mathlib's `IsSemisimpleModule.exists_linearEquiv_fin_dfinsupp`
+  output).  For finite `ι` this is equivalent to a Π form via
+  `DFinsupp.equivFunOnFintype`. -/
+  iso : V ≃ₗ[MonoidAlgebra k G] Π₀ (i : ι), Fin (mult i) → S i
 
 attribute [instance] SimpleDecomp.fintypeι SimpleDecomp.decEqι SimpleDecomp.simpleS
 
+/-- Convert a `MonoidAlgebra k G`-submodule of `V` to an FDRep object,
+with the action induced by restricting `V.ρ`.  The submodule is stable
+under each `V.ρ g` because it is closed under `MonoidAlgebra.single g 1 •`,
+which equals `V.ρ g` (via `FDRep.single_smul`). -/
+noncomputable def fdrepOfStableSubmodule (V : FDRep k G)
+    (W : Submodule (MonoidAlgebra k G) V) : FDRep k G :=
+  let W_k : Submodule k V := W.restrictScalars k
+  haveI : Module.Finite k W_k := Module.Finite.of_injective W_k.subtype W_k.injective_subtype
+  FDRep.of (V := W_k)
+    { toFun := fun g => (V.ρ g).restrict (p := W_k) fun w hw => by
+        change (V.ρ g) w ∈ W
+        have : MonoidAlgebra.single g (1 : k) • w ∈ W := W.smul_mem _ hw
+        rwa [FDRep.single_smul, one_smul] at this
+      map_one' := by ext; simp
+      map_mul' := fun g h => by ext; simp }
+
 /-- Existence of the canonical isotypic decomposition for any
-`V : FDRep k G` under the standing hypotheses. -/
+`V : FDRep k G` under the standing hypotheses.
+
+Implementation: full constructor pending iso-class grouping (see plan in
+the file docstring).  The current definition is `sorry`; the structure
+type and helpers above (`fdrepOfStableSubmodule`,
+`Module.Finite.of_restrictScalars_finite` for the `k[G]`-finiteness step)
+are the main building blocks. -/
 noncomputable def simpleDecomp (V : FDRep k G) : SimpleDecomp V := by
-  -- See the implementation plan in the file's module docstring.
+  haveI : Module.Finite (MonoidAlgebra k G) V :=
+    Module.Finite.of_restrictScalars_finite k (MonoidAlgebra k G) V
+  haveI : IsSemisimpleModule (MonoidAlgebra k G) V := by
+    -- From Maschke; instance exists once the `Module (MonoidAlgebra k G) V`
+    -- is the `moduleMonoidAlgebra` one in `FDRepEnd.lean`.
+    exact inferInstance
+  -- Plan (see file docstring):
+  -- 1. ⟨n, S_raw, e_raw, hsimple⟩ ← `IsSemisimpleModule.exists_linearEquiv_fin_dfinsupp`
+  -- 2. Convert each `S_raw i` to an FDRep via `fdrepOfStableSubmodule`.
+  -- 3. Group `Fin n` by the relation `i ~ j ↔ Nonempty (S_fdrep i ≅ S_fdrep j)`,
+  --    take quotient `ι`, pick representatives, count multiplicities.
+  -- 4. Reindex the DFinsupp iso through the grouping to obtain
+  --    `V ≃ₗ[k[G]] Π₀ (i : ι), Fin (mult i) → S i`.
   sorry
 
 namespace SimpleDecomp
