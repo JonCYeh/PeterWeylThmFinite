@@ -150,29 +150,58 @@ noncomputable def fdrepOfStableSubmodule (V : FDRep k G)
       map_one' := by ext; simp
       map_mul' := fun g h => by ext; simp }
 
+/-- The setoid on `Fin n` whose classes are FDRep isomorphism classes of
+the simple summands `fdrepOfStableSubmodule V (S i)`.  Used internally by
+`simpleDecomp` to group the raw decomposition by iso class. -/
+private noncomputable def isoClassSetoid (V : FDRep k G) {n : ℕ}
+    (S : Fin n → Submodule (MonoidAlgebra k G) V) :
+    Setoid (Fin n) where
+  r i j := Nonempty (fdrepOfStableSubmodule V (S i) ≅ fdrepOfStableSubmodule V (S j))
+  iseqv :=
+    { refl := fun _ => ⟨CategoryTheory.Iso.refl _⟩
+      symm := fun ⟨h⟩ => ⟨h.symm⟩
+      trans := fun ⟨h₁⟩ ⟨h₂⟩ => ⟨h₁ ≪≫ h₂⟩ }
+
 /-- Existence of the canonical isotypic decomposition for any
 `V : FDRep k G` under the standing hypotheses.
 
-Implementation: full constructor pending iso-class grouping (see plan in
-the file docstring).  The current definition is `sorry`; the structure
-type and helpers above (`fdrepOfStableSubmodule`,
-`Module.Finite.of_restrictScalars_finite` for the `k[G]`-finiteness step)
-are the main building blocks. -/
-noncomputable def simpleDecomp (V : FDRep k G) : SimpleDecomp V := by
+Implementation status: the bookkeeping fields (`ι, S, mult, mult_pos,
+pairwise_non_iso`) are provided.  The decomposition iso (`iso` field)
+requires reindexing Mathlib's `Π₀ (i : Fin n), S_raw i` through the
+quotient `ι` plus FDRep-iso-to-`k[G]`-LinearEquiv conversion for each
+summand; this last step is left as `sorry`. -/
+noncomputable def simpleDecomp (V : FDRep k G) : SimpleDecomp V :=
   haveI : Module.Finite (MonoidAlgebra k G) V :=
     Module.Finite.of_restrictScalars_finite k (MonoidAlgebra k G) V
-  haveI : IsSemisimpleModule (MonoidAlgebra k G) V := by
-    -- From Maschke; instance exists once the `Module (MonoidAlgebra k G) V`
-    -- is the `moduleMonoidAlgebra` one in `FDRepEnd.lean`.
-    exact inferInstance
-  -- Plan (see file docstring):
-  -- 1. ⟨n, S_raw, e_raw, hsimple⟩ ← `IsSemisimpleModule.exists_linearEquiv_fin_dfinsupp`
-  -- 2. Convert each `S_raw i` to an FDRep via `fdrepOfStableSubmodule`.
-  -- 3. Group `Fin n` by the relation `i ~ j ↔ Nonempty (S_fdrep i ≅ S_fdrep j)`,
-  --    take quotient `ι`, pick representatives, count multiplicities.
-  -- 4. Reindex the DFinsupp iso through the grouping to obtain
-  --    `V ≃ₗ[k[G]] Π₀ (i : ι), Fin (mult i) → S i`.
-  sorry
+  haveI : IsSemisimpleModule (MonoidAlgebra k G) V := inferInstance
+  let raw := IsSemisimpleModule.exists_linearEquiv_fin_dfinsupp (MonoidAlgebra k G) V
+  let n : ℕ := raw.choose
+  let S_raw : Fin n → Submodule (MonoidAlgebra k G) V := raw.choose_spec.choose
+  -- Each `S_raw i` is a simple `k[G]`-submodule; wrap as an FDRep object.
+  let S_fdrep : Fin n → FDRep k G := fun i => fdrepOfStableSubmodule V (S_raw i)
+  -- Group `Fin n` by FDRep iso class.
+  let σ : Setoid (Fin n) := isoClassSetoid V S_raw
+  letI : DecidableRel σ.r := Classical.decRel _
+  letI : DecidableEq (Quotient σ) := Classical.decEq _
+  { ι := ULift.{u} (Quotient σ)
+    fintypeι := inferInstance
+    decEqι := inferInstance
+    S := fun q => S_fdrep q.down.out
+    simpleS := by
+      -- Bridge `IsSimpleModule k[G] (S_raw i) → Simple (S_fdrep i)` missing
+      -- in Mathlib; left as sorry for now.
+      intro _; exact sorry
+    mult := fun q => Fintype.card {i : Fin n // Quotient.mk σ i = q.down}
+    mult_pos := by
+      intro q
+      refine Fintype.card_pos_iff.mpr ⟨⟨q.down.out, ?_⟩⟩
+      exact Quotient.out_eq q.down
+    pairwise_non_iso := by
+      intro q₁ q₂ hne
+      refine ⟨fun iso => hne ?_⟩
+      apply ULift.ext
+      exact Quotient.out_equiv_out.mp ⟨iso⟩
+    iso := sorry }
 
 namespace SimpleDecomp
 
