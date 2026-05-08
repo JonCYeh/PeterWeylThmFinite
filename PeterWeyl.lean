@@ -3,6 +3,10 @@ Copyright (c) 2026.  Released under Apache 2.0 license.
 -/
 import PeterWeyl.Basic
 import PeterWeyl.Auxiliary
+import PeterWeyl.Upstream.FinrankEnd
+import PeterWeyl.Upstream.FDRepEnd
+import PeterWeyl.Upstream.Decomposition
+import PeterWeyl.Upstream.Characters
 
 /-!
 # `PeterWeyl` — umbrella file

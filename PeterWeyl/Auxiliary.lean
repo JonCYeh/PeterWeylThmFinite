@@ -6,6 +6,7 @@ import Mathlib.RepresentationTheory.Character
 import Mathlib.RepresentationTheory.Maschke
 import Mathlib.RingTheory.SimpleModule.WedderburnArtin
 import Mathlib.Algebra.DirectSum.LinearMap
+import PeterWeyl.Upstream.FDRepEnd
 
 open CategoryTheory
 
@@ -38,14 +39,9 @@ namespace FDRep
 section
 variable {k G : Type u} [Field k] [Group G] [Fintype G] [NeZero (Nat.card G : k)]
 
-/-- The `MonoidAlgebra k G`-module structure on `V : FDRep k G` induced by its
-action `V.ρ`, defined directly on the FDRep-coerced type rather than going
-through `Representation.asModule` (which Lean's elaborator can't unify with
-`↑V` here, blocking instance synth).  Mirrors
-`Mathlib.RepresentationTheory.Basic`'s instance for `Representation.asModule`. -/
-noncomputable instance moduleMonoidAlgebra (V : FDRep k G) :
-    Module (MonoidAlgebra k G) V :=
-  Module.compHom V (Representation.asAlgebraHom (V.ρ : Representation k G V)).toRingHom
+-- The `Module (MonoidAlgebra k G) V` instance for `V : FDRep k G`
+-- (`FDRep.moduleMonoidAlgebra`) lives in `PeterWeyl.Upstream.FDRepEnd`,
+-- imported above.  It's the foundation everything below depends on.
 
 /-- Every `V : FDRep k G` is a semisimple `k[G]`-module.  Cited as
 `cor:fdrep-semisimple`.  Reduces to Maschke's
@@ -156,56 +152,12 @@ theorem simple_iff_finrank_End_eq_one (V : FDRep k G) :
     -- two linearly independent endomorphisms — contradicting `dim = 1`.
     sorry
 
-/-- Characters separate isomorphism classes of `FDRep k G`.  Cited as
-`cor:char-separates`.
-
-Forward direction is `FDRep.char_iso` (immediate).  Backward direction is
-the substantive one and is `sorry`'d — it requires an FDRep-side
-isotypic-decomposition API (a `SimpleDecomp V` structure with index ι,
-distinct simples Sᵢ, multiplicities mᵢ, the character-additivity
-identity `χ_V = ∑ᵢ mᵢ • χ_Sᵢ`, and an iso witness `V ≅ ⨁ᵢ Sᵢ^{mᵢ}`).
-
-Once that structure exists, the backward direction is:
-1. Build `SimpleDecomp V` and `SimpleDecomp W`.
-2. By `Representation.multiplicity_eq_inner_char` (proved above) +
-   character orthonormality, multiplicities are determined by characters.
-3. Equal characters ⇒ matching multiplicities for every simple class.
-4. Compose the two decomposition isos via the index bijection to get `V ≅ W`.
-
-The construction of `SimpleDecomp` from
-`IsSemisimpleModule.exists_linearEquiv_dfinsupp` plus iso-class grouping
-is roughly 80–120 lines of bridging Submodule ↔ FDRep and quotienting by
-iso. -/
-theorem iso_iff_character_eq (V W : FDRep k G) :
-    Nonempty (V ≅ W) ↔ V.character = W.character := by
-  refine ⟨fun ⟨φ⟩ => char_iso φ, ?_⟩
-  intro _hχ
-  sorry
-
-/-- Irreducibility test: `V` is simple iff `⟨χ_V, χ_V⟩ = 1`.
-Cited as `cor:irred-test`.
-
-Forward direction reduces to `FDRep.char_orthonormal V V` (with the
-`if Nonempty (V ≅ V) then 1 else 0` collapsed via `Iso.refl V`).
-
-Backward direction is `sorry`'d, blocked on the same isotypic-decomposition
-API as `iso_iff_character_eq` above:
-1. Build `SimpleDecomp V`.
-2. Character additivity + `char_orthonormal` give
-   `⟨χ_V, χ_V⟩ = ∑ᵢ mᵢ²`.
-3. Together with `mult_pos` (each `mᵢ > 0`), the equation `∑ mᵢ² = 1`
-   forces a single index with `m = 1`.
-4. The decomposition iso then gives `V ≅ Sᵢ` for that i (`Simple Sᵢ`),
-   hence `Simple V` by transport. -/
-theorem irreducible_iff_inner_self_eq_one (V : FDRep k G) :
-    Simple V ↔
-      ⅟(Fintype.card G : k) • ∑ g : G, V.character g * V.character g⁻¹ = 1 := by
-  refine ⟨fun hV => ?_, fun _ => ?_⟩
-  · haveI := hV
-    have h := FDRep.char_orthonormal V V
-    rw [if_pos ⟨Iso.refl V⟩] at h
-    exact_mod_cast h
-  · sorry
+-- The headline corollaries `FDRep.iso_iff_character_eq` (cor:char-separates)
+-- and `FDRep.irreducible_iff_inner_self_eq_one` (cor:irred-test) live in
+-- `PeterWeyl.Upstream.Characters` (the planned upstream contribution).
+-- Both are stated with proper iff signatures; the backward directions are
+-- sorry'd pending the FDRep simple-decomposition API in
+-- `PeterWeyl.Upstream.Decomposition`.
 
 end
 
