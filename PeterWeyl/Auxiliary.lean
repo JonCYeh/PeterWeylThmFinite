@@ -125,19 +125,40 @@ local instance (priority := 100) instInvertibleFintypeCard' :
     Invertible ((Fintype.card G : k)) :=
   invertibleOfNonzero (by rw [← Nat.card_eq_fintype_card]; exact NeZero.ne _)
 
+/-- Characters add over a direct-sum decomposition: if `V`'s underlying type
+splits internally as `⨁ᵢ Nᵢ` with each `Nᵢ` invariant under `V.ρ g`, then
+`V.character g` is the sum of the sub-traces.  Foundational helper for
+items 4–5 backward, isolating the trace-additivity step before any
+multiplicity bookkeeping. -/
+theorem character_eq_sum_restrict (V : FDRep k G)
+    {ι : Type*} [Fintype ι]
+    (N : ι → Submodule k V) (hint : DirectSum.IsInternal N)
+    (hinv : ∀ (g : G) (i : ι), Set.MapsTo (V.ρ g) (N i) (N i)) (g : G) :
+    V.character g =
+      ∑ i, LinearMap.trace k (N i) ((V.ρ g).restrict (hinv g i)) := by
+  show LinearMap.trace k V (V.ρ g) = _
+  exact LinearMap.trace_eq_sum_trace_restrict hint (hinv g)
+
 /-- Characters separate isomorphism classes of `FDRep k G`.  Cited as
 `cor:char-separates`.
 
 Forward direction is `FDRep.char_iso` (immediate).  Backward direction is
-the substantive one and is `sorry`'d.
+the substantive one and is `sorry`'d — it requires an FDRep-side
+isotypic-decomposition API (a `SimpleDecomp V` structure with index ι,
+distinct simples Sᵢ, multiplicities mᵢ, the character-additivity
+identity `χ_V = ∑ᵢ mᵢ • χ_Sᵢ`, and an iso witness `V ≅ ⨁ᵢ Sᵢ^{mᵢ}`).
 
-**Proof plan** for the backward direction:
-1. By Maschke, both `V` and `W` decompose into isotypic components
-   `V = ⨁ᵢ Wᵢ^{mᵢ}` and `W = ⨁ᵢ Wᵢ^{nᵢ}` over irreducibles `Wᵢ`.
-2. Characters add over direct sums: `V.character = ∑ᵢ mᵢ • Wᵢ.character`.
-3. Orthonormality (`FDRep.char_orthonormal`) gives
-   `⟨χ_V, χ_{Wᵢ}⟩ = mᵢ` and similarly for `W`.
-4. From `χ_V = χ_W` we conclude `mᵢ = nᵢ` for every `i`, hence `V ≅ W`. -/
+Once that structure exists, the backward direction is:
+1. Build `SimpleDecomp V` and `SimpleDecomp W`.
+2. By `Representation.multiplicity_eq_inner_char` (proved above) +
+   character orthonormality, multiplicities are determined by characters.
+3. Equal characters ⇒ matching multiplicities for every simple class.
+4. Compose the two decomposition isos via the index bijection to get `V ≅ W`.
+
+The construction of `SimpleDecomp` from
+`IsSemisimpleModule.exists_linearEquiv_dfinsupp` plus iso-class grouping
+is roughly 80–120 lines of bridging Submodule ↔ FDRep and quotienting by
+iso. -/
 theorem iso_iff_character_eq (V W : FDRep k G) :
     Nonempty (V ≅ W) ↔ V.character = W.character := by
   refine ⟨fun ⟨φ⟩ => char_iso φ, ?_⟩
@@ -150,13 +171,15 @@ Cited as `cor:irred-test`.
 Forward direction reduces to `FDRep.char_orthonormal V V` (with the
 `if Nonempty (V ≅ V) then 1 else 0` collapsed via `Iso.refl V`).
 
-Backward direction is `sorry`'d.  **Plan**: by Maschke,
-`V = ⨁ᵢ Wᵢ^{mᵢ}` with `Wᵢ` distinct simples.  Character additivity
-plus `char_orthonormal` give `⟨χ_V, χ_V⟩ = ∑ᵢ mᵢ²`.  This equals `1`
-iff exactly one `mᵢ = 1` and the rest are `0`, i.e. `V ≅ Wᵢ` for some
-`i`, so `V` is simple.  Needs an FDRep-decomposition API that's not
-yet in Mathlib (only the End-side decomposition via
-`IsSemisimpleModule.exists_end_algEquiv_pi_matrix_end` is). -/
+Backward direction is `sorry`'d, blocked on the same isotypic-decomposition
+API as `iso_iff_character_eq` above:
+1. Build `SimpleDecomp V`.
+2. Character additivity + `char_orthonormal` give
+   `⟨χ_V, χ_V⟩ = ∑ᵢ mᵢ²`.
+3. Together with `mult_pos` (each `mᵢ > 0`), the equation `∑ mᵢ² = 1`
+   forces a single index with `m = 1`.
+4. The decomposition iso then gives `V ≅ Sᵢ` for that i (`Simple Sᵢ`),
+   hence `Simple V` by transport. -/
 theorem irreducible_iff_inner_self_eq_one (V : FDRep k G) :
     Simple V ↔
       ⅟(Fintype.card G : k) • ∑ g : G, V.character g * V.character g⁻¹ = 1 := by
