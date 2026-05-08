@@ -4,6 +4,8 @@ Authors: TBD
 -/
 import Mathlib.RepresentationTheory.FDRep
 import Mathlib.RepresentationTheory.Basic
+import Mathlib.RepresentationTheory.Intertwining
+import Mathlib.RepresentationTheory.Rep.Basic
 
 /-!
 # `FDRep` morphisms as `MonoidAlgebra`-module endomorphisms
@@ -97,6 +99,38 @@ instance isScalarTower_moduleMonoidAlgebra (V : FDRep k G) :
       rw [← smul_assoc, smul_eq_mul, hy (t * s), ← smul_eq_mul, smul_assoc]
       aesop
 
+/-- `k`-linear equivalence between Rep-hom and intertwining maps. -/
+private noncomputable def _root_.Rep.homEquivIntertwiningMap (A B : Rep k G) :
+    (A ⟶ B) ≃ₗ[k] A.ρ.IntertwiningMap B.ρ where
+  toFun := Rep.Hom.hom
+  invFun := Rep.ofHom
+  left_inv f := by simp
+  right_inv f := by simp
+  map_add' f g := Rep.add_hom f g
+  map_smul' c f := Rep.smul_hom f c
+
+/-- Transport a `k[G]`-linear endomorphism of `Representation.asModule V.ρ`
+(Mathlib's type-alias instance) to one on `V` (our `moduleMonoidAlgebra`
+instance).  Both module structures are
+`Module.compHom V (asAlgebraHom V.ρ).toRingHom`, so this is a definitional
+identity at the `LinearMap` data level. -/
+private noncomputable def asModuleEndEquiv (V : FDRep k G) :
+    ((Representation.asModule V.ρ) →ₗ[MonoidAlgebra k G]
+      (Representation.asModule V.ρ)) ≃ₗ[k]
+      (V →ₗ[MonoidAlgebra k G] V) where
+  toFun f :=
+    { toFun := f
+      map_add' := f.map_add
+      map_smul' := f.map_smul }
+  invFun f :=
+    { toFun := f
+      map_add' := f.map_add
+      map_smul' := f.map_smul }
+  left_inv _ := rfl
+  right_inv _ := rfl
+  map_add' _ _ := rfl
+  map_smul' _ _ := rfl
+
 /-- The `k`-linear equivalence between FDRep morphisms and equivariant
 endomorphisms of the underlying `MonoidAlgebra k G`-module.
 
@@ -104,18 +138,11 @@ This requires `Module k (Module.End (MonoidAlgebra k G) V)` which Lean
 synthesizes from `Module k V` + `IsScalarTower k (MonoidAlgebra k G) V`
 via `LinearMap.module`. -/
 noncomputable def endLinearEquiv (V : FDRep k G) :
-    (V ⟶ V) ≃ₗ[k] (V →ₗ[MonoidAlgebra k G] V) := by
-  -- Plan:
-  -- * `toFun`: take the underlying `k`-linear map of an FDRep morphism
-  --   (via `Action.Hom.hom` / `FDRep.forget₂HomLinearEquiv` chained with
-  --   the appropriate Rep-side lemma) and promote to k[G]-linearity using
-  --   the equivariance hypothesis.
-  -- * `invFun`: take a k[G]-linear endomorphism and produce an FDRep
-  --   morphism — equivariance under each `g : G` follows from k[G]-linearity
-  --   applied to `MonoidAlgebra.single g 1`.
-  -- * `map_add'`, `map_smul'`: by linearity of the components.
-  -- * `left_inv`, `right_inv`: `ext`-and-rfl after unfolding.
-  sorry
+    (V ⟶ V) ≃ₗ[k] (V →ₗ[MonoidAlgebra k G] V) :=
+  (forget₂HomLinearEquiv V V).symm.trans <|
+    (Rep.homEquivIntertwiningMap _ _).trans <|
+      (Representation.IntertwiningMap.equivLinearMapAsModule V.ρ V.ρ).trans
+        (asModuleEndEquiv V)
 
 @[simp]
 theorem finrank_end_eq_finrank_moduleEnd (V : FDRep k G) :
