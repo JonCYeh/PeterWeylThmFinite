@@ -1,5 +1,6 @@
 name = "PeterWeyl"
 defaultTargets = ["PeterWeyl"]
+lintDriver = "runLinter"
 
 [leanOptions]
 pp.unicode.fun = true
@@ -21,3 +22,8 @@ git = "https://github.com/leanprover/doc-gen4"
 rev = "main"
 [[lean_lib]]
 name = "PeterWeyl"
+
+[[lean_exe]]
+name = "runLinter"
+srcDir = "scripts"
+supportInterpreter = true

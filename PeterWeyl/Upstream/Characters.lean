@@ -51,6 +51,9 @@ universe u
 variable {k G : Type u} [Field k] [IsAlgClosed k] [Group G] [Fintype G]
   [NeZero (Nat.card G : k)]
 
+/-- Bridge `NeZero (Nat.card G : k) → Invertible (Fintype.card G : k)` so
+`FDRep.char_orthonormal` (which uses `Invertible`) fires under our project's
+standing hypotheses (which use `NeZero`). -/
 local instance (priority := 100) instInvertibleFintypeCard''' :
     Invertible ((Fintype.card G : k)) :=
   invertibleOfNonzero (by rw [← Nat.card_eq_fintype_card]; exact NeZero.ne _)
