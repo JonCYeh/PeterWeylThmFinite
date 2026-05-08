@@ -5,6 +5,7 @@ import Mathlib.RepresentationTheory.FDRep
 import Mathlib.RepresentationTheory.Character
 import Mathlib.RepresentationTheory.Maschke
 import Mathlib.RingTheory.SimpleModule.WedderburnArtin
+import Mathlib.Algebra.DirectSum.LinearMap
 
 open CategoryTheory
 
@@ -131,13 +132,29 @@ splits internally as `⨁ᵢ Nᵢ` with each `Nᵢ` invariant under `V.ρ g`, th
 items 4–5 backward, isolating the trace-additivity step before any
 multiplicity bookkeeping. -/
 theorem character_eq_sum_restrict (V : FDRep k G)
-    {ι : Type*} [Fintype ι]
+    {ι : Type*} [Fintype ι] [DecidableEq ι]
     (N : ι → Submodule k V) (hint : DirectSum.IsInternal N)
     (hinv : ∀ (g : G) (i : ι), Set.MapsTo (V.ρ g) (N i) (N i)) (g : G) :
     V.character g =
       ∑ i, LinearMap.trace k (N i) ((V.ρ g).restrict (hinv g i)) := by
   show LinearMap.trace k V (V.ρ g) = _
   exact LinearMap.trace_eq_sum_trace_restrict hint (hinv g)
+
+/-- Cast-friendly intermediate: for an alg-closed-field representation,
+simplicity is equivalent to the equivariant endomorphism algebra being
+1-dimensional.  Forward direction is `FDRep.finrank_hom_simple_simple`
+(Schur). Backward is `sorry`'d — see plan below. -/
+theorem simple_iff_finrank_End_eq_one (V : FDRep k G) :
+    Simple V ↔ Module.finrank k (V ⟶ V) = 1 := by
+  refine ⟨fun hV => ?_, fun _h => ?_⟩
+  · haveI := hV
+    rw [finrank_hom_simple_simple]
+    exact if_pos ⟨Iso.refl V⟩
+  · -- Backward.  By Maschke `V` is semisimple.  If `V` is not simple, it
+    -- decomposes as `V = V₁ ⊕ V₂` with both nonzero, and `End_{k[G]} V`
+    -- contains the projector idempotent for each summand, giving at least
+    -- two linearly independent endomorphisms — contradicting `dim = 1`.
+    sorry
 
 /-- Characters separate isomorphism classes of `FDRep k G`.  Cited as
 `cor:char-separates`.
