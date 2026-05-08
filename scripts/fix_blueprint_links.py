@@ -126,6 +126,30 @@ def rewrite_html(text: str, decl_map: dict[str, tuple[str, int]]) -> tuple[str, 
     return new_text, n_local, n_mathlib
 
 
+def patch_dep_graph_worker(web_dir: Path, dry_run: bool) -> int:
+    """The d3-graphviz `{useWorker: true}` config in `dep_graph_document.html`
+    spawns a Web Worker that loads `graphvizlib.wasm`/`expatlib.wasm`.  The
+    worker fails to render under several common local-serve setups (MIME
+    type quirks, cross-origin restrictions on workers loading WASM, etc.),
+    so the dependency graph silently shows nothing while the rest of the
+    site works fine.
+
+    Switching to `useWorker: false` runs the layout synchronously on the
+    main thread — slightly slower but reliably renders.  This patch is
+    safe to apply unconditionally; it's idempotent across reruns.
+    """
+    fp = web_dir / "dep_graph_document.html"
+    if not fp.exists():
+        return 0
+    text = fp.read_text()
+    new = text.replace("useWorker: true", "useWorker: false")
+    if new == text:
+        return 0
+    if not dry_run:
+        fp.write_text(new)
+    return 1
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n", 1)[0])
     ap.add_argument(
@@ -181,6 +205,12 @@ def main() -> int:
         f"\n{verb} {total_local} local + {total_mathlib} mathlib hrefs "
         f"across {files_touched} files"
     )
+
+    n_worker = patch_dep_graph_worker(web_dir, args.dry_run)
+    if n_worker:
+        verb2 = "would patch" if args.dry_run else "patched"
+        print(f"{verb2} dep_graph_document.html: useWorker: true → false")
+
     return 0
 
 
