@@ -53,11 +53,9 @@ theorem finrank_End_pi_matrix
     (d : ι → ℕ)
     (e : E ≃ₗ[k] Π i, Matrix (Fin (d i)) (Fin (d i)) (Eᵢ i)) :
     Module.finrank k E = ∑ i, (d i) ^ 2 * Module.finrank k (Eᵢ i) := by
-  -- Plan:
-  -- 1. `e.finrank_eq` reduces to `finrank k (Π i, Matrix (Fin (d i)) (Fin (d i)) (Eᵢ i))`.
-  -- 2. `Module.finrank_pi_fintype` distributes the sum over `i`.
-  -- 3. `Module.finrank_matrix` rewrites each `finrank k (Matrix (Fin (d i)) (Fin (d i)) (Eᵢ i))`
-  --    as `(Fintype.card (Fin (d i)))² * finrank k (Eᵢ i) = (d i)² * finrank k (Eᵢ i)`.
-  sorry
+  rw [e.finrank_eq, Module.finrank_pi_fintype]
+  refine Finset.sum_congr rfl (fun i _ => ?_)
+  rw [Module.finrank_matrix, Fintype.card_fin]
+  ring
 
 end Module
