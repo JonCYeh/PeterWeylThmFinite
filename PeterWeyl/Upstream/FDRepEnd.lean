@@ -66,13 +66,36 @@ noncomputable instance moduleMonoidAlgebra (V : FDRep k G) :
     Module (MonoidAlgebra k G) V :=
   Module.compHom V (Representation.asAlgebraHom (V.ρ : Representation k G V)).toRingHom
 
+/-- Action of a `MonoidAlgebra` single-element on a vector in `V`,
+unfolded through `Representation.asAlgebraHom`.  Mirrors
+`Representation.single_smul` for `Representation.asModule`, but on the
+FDRep-coerced underlying type. -/
+@[simp]
+theorem single_smul (V : FDRep k G) (t : k) (g : G) (v : V) :
+    (MonoidAlgebra.single g t : MonoidAlgebra k G) • v = t • V.ρ g v := by
+  show (Representation.asAlgebraHom V.ρ) (MonoidAlgebra.single g t) v = t • V.ρ g v
+  simp [Representation.asAlgebraHom_single]
+
+set_option backward.isDefEq.respectTransparency false in
 /-- Scalar tower: `k → MonoidAlgebra k G → V` is compatible.  This is
 required to derive `Module k (Module.End (MonoidAlgebra k G) V)` from
-the existing `Module k V` instance via `LinearMap.module`. -/
+the existing `Module k V` instance via `LinearMap.module`.
+
+Direct port of Mathlib's `Representation.asModule` `IsScalarTower`
+instance (`Mathlib/RepresentationTheory/Basic.lean`), using the same
+`MonoidAlgebra.induction_on` strategy. -/
 instance isScalarTower_moduleMonoidAlgebra (V : FDRep k G) :
-    IsScalarTower k (MonoidAlgebra k G) V := by
-  -- TODO: derive from `Module.compHom` + algebra-hom of `Representation.asAlgebraHom`.
-  sorry
+    IsScalarTower k (MonoidAlgebra k G) V where
+  smul_assoc t x v := by
+    revert t
+    apply x.induction_on
+    · intro m t
+      simp
+    · intro y z hy hz
+      simp [add_smul, hy, hz]
+    · intro s y hy t
+      rw [← smul_assoc, smul_eq_mul, hy (t * s), ← smul_eq_mul, smul_assoc]
+      aesop
 
 /-- The `k`-linear equivalence between FDRep morphisms and equivariant
 endomorphisms of the underlying `MonoidAlgebra k G`-module.
